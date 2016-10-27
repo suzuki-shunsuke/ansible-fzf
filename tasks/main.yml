@@ -1,0 +1,26 @@
+---
+# tasks file for fzf
+- name: ghq root
+  shell: "{{ansible_env.HOME}}/.go/bin/ghq root"
+  register: ghq_root
+  changed_when: false
+- name: Clone fzf
+  ghq:
+    name: junegunn/fzf
+    executable: "{{ghq_executable}}"
+- name: Check ~/.fzf
+  stat:
+    path: "{{ansible_env.HOME}}/.fzf"
+  register: st
+- name: Back up ZPLUG_HOME
+  shell: "mv {{ansible_env.HOME}}/.fzf {{ansible_env.HOME}}/.fzf.{{ansible_date_time.date}}-{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}"
+  when: st.stat.exists and not st.stat.islnk
+- name: Make symbolic links
+  file:
+    src: "{{ghq_root.stdout}}/github.com/junegunn/fzf"
+    dest: "{{ansible_env.HOME}}/.fzf"
+    state: link
+- name: Install fzf
+  command: "./install"
+  args:
+    chdir: "{{ansible_env.HOME}}/.fzf"
